@@ -1,0 +1,15 @@
+INVOICE #10482
+Date: 2026-08-30
+
+From:
+Bluebird Logistics Inc.
+77 Harbor Way
+Portland, OR 97209
+Tel: 503-555-0177
+Tax ID: 45-1234567
+
+Bill To:
+Example Corp, 100 Main St, Denver, CO 80202
+
+Description: Freight services, August
+Amount due: $2,450.00 (Net 30)
