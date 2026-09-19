@@ -1,4 +1,9 @@
 <main>
   <h1>{{ title() }}</h1>
   <app-document-input (extract)="onExtract($event)" />
+
+  @if (result(); as data) {
+    <h2>Review the extracted details</h2>
+    <app-extraction-form [result]="data" />
+  }
 </main>
