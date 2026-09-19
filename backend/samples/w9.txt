@@ -1,0 +1,11 @@
+Form W-9 (Rev. March 2024)
+Request for Taxpayer Identification Number and Certification
+
+1. Name of entity/individual: Northwind Supply Co., LLC
+2. Business name/disregarded entity name: Northwind Supply
+3. Federal tax classification: Limited liability company (C)
+5. Address: 4821 Cedar Ridge Road, Suite 210
+6. City, state, and ZIP code: Austin, TX 78701
+Employer identification number: 98-7654321
+Phone: (512) 555-0142
+Signature: J. Rivera    Date: 03/14/2026

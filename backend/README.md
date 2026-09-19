@@ -1,114 +1,106 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Vendor Form Autofill - Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS API that takes pasted vendor text (a W-9, an invoice, ...) and uses Claude to extract structured fields, each with a confidence level.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Requirements
 
-## Description
+- Node 24.9 or newer (the Jest setup needs it)
+- An Anthropic API key
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Setup
 
 ```bash
-$ npm install
+npm install
+cp .env.example .env   # Windows PowerShell: Copy-Item .env.example .env
 ```
 
-## Compile and run the project
+Then edit `.env` and set `ANTHROPIC_API_KEY`. Never commit `.env`.
+
+| Variable            | Purpose                                                              | Default           |
+| ------------------- | -------------------------------------------------------------------- | ----------------- |
+| `ANTHROPIC_API_KEY` | Your Anthropic API key (required; the app will not start without it) | none              |
+| `ANTHROPIC_MODEL`   | Claude model used for extraction                                     | `claude-sonnet-5` |
+| `PORT`              | Port the API listens on                                              | `3000`            |
+
+## Run
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run start:dev   # watch mode, http://localhost:3000
+npm test            # unit tests
 ```
 
-## Run tests
+## API
+
+### `POST /extract`
+
+Request body: `{ "text": string }`. The text must contain something other than whitespace and be at most 20,000 characters.
+
+Each field in the response is `{ "value": string | null, "confidence": "high" | "medium" | "low" }`. `value` is `null` when the document does not contain the field.
+
+**Sample request** (`samples/w9.txt`, made-up data):
+
+```json
+{
+  "text": "Form W-9 (Rev. March 2024)\nRequest for Taxpayer Identification Number and Certification\n\n1. Name of entity/individual: Northwind Supply Co., LLC\n2. Business name/disregarded entity name: Northwind Supply\n3. Federal tax classification: Limited liability company (C)\n5. Address: 4821 Cedar Ridge Road, Suite 210\n6. City, state, and ZIP code: Austin, TX 78701\nEmployer identification number: 98-7654321\nPhone: (512) 555-0142\nSignature: J. Rivera    Date: 03/14/2026"
+}
+```
+
+**Sample response** (`201 Created`):
+
+```json
+{
+  "businessName": {
+    "value": "Northwind Supply Co., LLC",
+    "confidence": "high"
+  },
+  "taxId": { "value": "98-7654321", "confidence": "high" },
+  "addressStreet": {
+    "value": "4821 Cedar Ridge Road, Suite 210",
+    "confidence": "high"
+  },
+  "addressCity": { "value": "Austin", "confidence": "high" },
+  "addressState": { "value": "TX", "confidence": "high" },
+  "addressPostalCode": { "value": "78701", "confidence": "high" },
+  "phone": { "value": "(512) 555-0142", "confidence": "high" }
+}
+```
+
+**Calling it with curl (macOS/Linux):**
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+curl -X POST http://localhost:3000/extract \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Name: Acme Widgets LLC\nEIN: 12-3456789"}'
 ```
 
-## Deployment
+**Calling it from Windows PowerShell.** Quoted JSON gets split on spaces when passed as an argument, so pipe the body in instead:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```powershell
+@{ text = [System.IO.File]::ReadAllText("$PWD\samples\w9.txt") } | ConvertTo-Json |
+  curl.exe -i -X POST http://localhost:3000/extract -H "Content-Type: application/json" -d "@-"
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Use `[System.IO.File]::ReadAllText`, not `Get-Content -Raw`. In Windows PowerShell 5.1 the latter adds hidden properties that `ConvertTo-Json` then sends as an object instead of a string.
 
-## Observability
+### Errors
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+Every error has the same shape, and `message` is always a string:
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+```json
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "text must contain more than whitespace"
+}
+```
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+| Status | When                                                                                                 |
+| ------ | ---------------------------------------------------------------------------------------------------- |
+| 400    | `text` is missing, not a string, blank, longer than 20,000 characters, or the body is not valid JSON |
+| 502    | Claude returned an error, an unusable result, or a response that does not match the schema           |
+| 503    | Claude is rate-limiting us or cannot be reached (requests time out after 60 seconds)                 |
+| 500    | Unexpected server error (details are in the server log only)                                         |
 
-## Resources
+## Sample documents
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+`samples/` holds made-up documents for testing: `w9.txt` and `invoice.txt`. The invoice names both a vendor ("From") and a customer ("Bill To"); the API returns the vendor.
