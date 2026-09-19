@@ -1,0 +1,11 @@
+<label for="document-text">Paste the vendor document text</label>
+<textarea
+  id="document-text"
+  rows="12"
+  maxlength="20000"
+  placeholder="Paste the text of a W-9, an invoice, ..."
+  [formControl]="text"
+></textarea>
+<button type="button" (click)="onExtract()" [disabled]="!canExtract">
+  {{ loading() ? 'Extracting...' : 'Extract' }}
+</button>
