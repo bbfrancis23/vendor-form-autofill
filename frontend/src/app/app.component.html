@@ -1,6 +1,10 @@
 <main>
   <h1>{{ title() }}</h1>
-  <app-document-input (extract)="onExtract($event)" />
+  <app-document-input [loading]="loading()" (extract)="onExtract($event)" />
+
+  @if (errorMessage(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
 
   @if (result(); as data) {
     <h2>Review the extracted details</h2>
