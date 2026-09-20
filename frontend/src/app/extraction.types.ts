@@ -17,3 +17,4 @@ export type FieldKey =
   | 'phone';
 
 export type ExtractionResult = Record<FieldKey, ExtractedField>;
+export type FormValues = Record<FieldKey, string>;

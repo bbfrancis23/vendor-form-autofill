@@ -8,6 +8,13 @@
 
   @if (result(); as data) {
     <h2>Review the extracted details</h2>
-    <app-extraction-form [result]="data" />
+    <app-extraction-form [result]="data" (submitted)="onSubmitted($event)" />
+  }
+
+  @if (submittedValues(); as values) {
+    <section class="submitted">
+      <h2>Submitted (not saved)</h2>
+      <pre>{{ values | json }}</pre>
+    </section>
   }
 </main>

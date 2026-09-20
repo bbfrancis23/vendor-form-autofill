@@ -1,21 +1,30 @@
-<form [formGroup]="form()">
+<form [formGroup]="form()" (ngSubmit)="onSubmit()">
   @for (field of fields; track field.key) {
-    <div class="field" [class.needs-review]="needsReview(field.key)">
+    <div
+      class="field"
+      [class.needs-review]="needsReview(field.key)"
+      [class.invalid]="showError(field.key)"
+    >
       <label [for]="field.key">{{ field.label }}</label>
       <div class="control">
         <input
           [id]="field.key"
           [type]="field.inputType"
           [formControlName]="field.key"
-          [attr.aria-describedby]="needsReview(field.key) ? field.key + '-note' : null"
+          [attr.aria-describedby]="describedBy(field.key)"
+          [attr.aria-invalid]="showError(field.key) ? 'true' : null"
         />
         @if (needsReview(field.key)) {
           <span class="icon" aria-hidden="true">⚠</span>
         }
       </div>
+      @if (showError(field.key)) {
+        <p class="error" role="alert" [id]="field.key + '-error'">{{ errorMessage(field.key) }}</p>
+      }
       @if (needsReview(field.key)) {
         <p class="note" [id]="field.key + '-note'">{{ reviewMessage(field.key) }}</p>
       }
     </div>
   }
+  <button type="submit">Submit</button>
 </form>

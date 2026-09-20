@@ -117,4 +117,16 @@ describe('App', () => {
       'could not be reached',
     );
   });
+
+  it('shows the submitted values after a valid submit', () => {
+    typeText('Acme LLC');
+    clickExtract();
+    http.expectOne('/api/extract').flush(RESULT);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.submitted pre').textContent).toContain('Acme LLC');
+  });
 });

@@ -1,12 +1,13 @@
+import { JsonPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { DocumentInput } from './document-input/document-input.component';
 import { ExtractionForm } from './extraction-form/extraction-form.component';
 import { ExtractionService } from './extraction.service';
-import { ExtractionResult } from './extraction.types';
+import { ExtractionResult, FormValues } from './extraction.types';
 
 @Component({
-  imports: [DocumentInput, ExtractionForm],
+  imports: [DocumentInput, ExtractionForm, JsonPipe],
   selector: 'app-root',
   styleUrl: './app.component.scss',
   templateUrl: './app.component.html',
@@ -18,10 +19,12 @@ export class App {
   protected readonly result = signal<ExtractionResult | null>(null);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly submittedValues = signal<FormValues | null>(null);
 
   protected onExtract(text: string): void {
     this.loading.set(true);
     this.errorMessage.set(null);
+    this.submittedValues.set(null);
 
     this.extractionService.extract(text).subscribe({
       next: (result) => {
@@ -33,6 +36,11 @@ export class App {
         this.loading.set(false);
       },
     });
+  }
+
+  protected onSubmitted(values: FormValues): void {
+    // v1 does not save anything: just show what would be sent.
+    this.submittedValues.set(values);
   }
 
   /** Turns an HTTP failure into something a vendor can act on. */
