@@ -1,45 +1,15 @@
-:host {
-  display: block;
+.invalid input {
+  border: 2px solid #b91c1c;
+  background: #fef2f2;
 }
 
-.field {
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.control {
-  position: relative;
-}
-
-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.5rem;
-  font: inherit;
-}
-
-.needs-review input {
-  border: 2px solid #d97706;
-  background: #fffbeb;
-  padding-right: 2rem;
-}
-
-.icon {
-  position: absolute;
-  right: 0.6rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #b45309;
-  pointer-events: none;
-}
-
-.note {
+.error {
   margin: 0.25rem 0 0;
   font-size: 0.85rem;
-  color: #92400e;
+  color: #b91c1c;
+}
+
+button[type='submit'] {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1.25rem;
 }

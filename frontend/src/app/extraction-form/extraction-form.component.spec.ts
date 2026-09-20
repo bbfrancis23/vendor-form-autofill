@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ExtractionResult } from '../extraction.types';
+import { ExtractionResult, FormValues } from '../extraction.types';
 import { ExtractionForm } from './extraction-form.component';
 
 const RESULT: ExtractionResult = {
@@ -84,5 +84,78 @@ describe('ExtractionForm', () => {
 
     expect(fixture.nativeElement.querySelector('#phone-note')).toBeNull();
     expect(fixture.nativeElement.querySelector('#addressCity-note')).not.toBeNull();
+  });
+
+  // Types into a field and leaves it, the way a user does.
+  function typeInto(id: string, value: string): void {
+    const input = inputById(id);
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+  }
+
+  function submitForm(): void {
+    fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+  }
+
+  function errorFor(id: string): HTMLElement | null {
+    return fixture.nativeElement.querySelector(`#${id}-error`);
+  }
+
+  it('requires a business name', () => {
+    typeInto('businessName', '');
+    expect(errorFor('businessName')?.textContent).toContain('Business name is required');
+  });
+
+  it('rejects a badly formatted tax ID', () => {
+    typeInto('taxId', '123');
+    expect(errorFor('taxId')?.textContent).toContain('EIN');
+  });
+
+  it('accepts an EIN, an SSN and 9 digits as a tax ID', () => {
+    for (const value of ['12-3456789', '123-45-6789', '123456789']) {
+      typeInto('taxId', value);
+      expect(errorFor('taxId')).toBeNull();
+    }
+  });
+
+  it('rejects a bad ZIP code and a bad phone number', () => {
+    typeInto('addressPostalCode', '7870');
+    typeInto('phone', '555-0142');
+    expect(errorFor('addressPostalCode')).not.toBeNull();
+    expect(errorFor('phone')).not.toBeNull();
+  });
+
+  it('accepts a valid ZIP code and phone number', () => {
+    typeInto('addressPostalCode', '78701-1234');
+    typeInto('phone', '(512) 555-0142');
+    expect(errorFor('addressPostalCode')).toBeNull();
+    expect(errorFor('phone')).toBeNull();
+  });
+
+  it('blocks submit and shows errors while the form is invalid', () => {
+    const emitted: FormValues[] = [];
+    fixture.componentInstance.submitted.subscribe((values) => emitted.push(values));
+
+    const name = inputById('businessName');
+    name.value = '';
+    name.dispatchEvent(new Event('input'));
+    submitForm();
+
+    expect(emitted).toEqual([]);
+    expect(errorFor('businessName')).not.toBeNull();
+  });
+
+  it('emits the values when a valid form is submitted', () => {
+    const emitted: FormValues[] = [];
+    fixture.componentInstance.submitted.subscribe((values) => emitted.push(values));
+
+    submitForm();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].businessName).toBe('Acme LLC');
+    expect(emitted[0].addressPostalCode).toBe('');
   });
 });
