@@ -1,0 +1,22 @@
+services:
+  api:
+    build: ./backend
+    image: vendor-api
+    env_file: ./backend/.env
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build: ./frontend
+    image: vendor-web
+    environment:
+      API_UPSTREAM: http://api:3000
+    ports:
+      - '8080:80'
+    depends_on:
+      api:
+        condition: service_healthy
