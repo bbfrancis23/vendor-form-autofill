@@ -12,9 +12,34 @@ label {
   margin-bottom: 0.25rem;
 }
 
+.control {
+  position: relative;
+}
+
 input {
   width: 100%;
   box-sizing: border-box;
   padding: 0.5rem;
   font: inherit;
+}
+
+.needs-review input {
+  border: 2px solid #d97706;
+  background: #fffbeb;
+  padding-right: 2rem;
+}
+
+.icon {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #b45309;
+  pointer-events: none;
+}
+
+.note {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #92400e;
 }

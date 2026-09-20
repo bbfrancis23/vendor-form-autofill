@@ -62,4 +62,27 @@ describe('ExtractionForm', () => {
 
     expect(inputById('businessName').value).toBe('Other Co');
   });
+
+  it('flags every field that is not high confidence', () => {
+    const flagged = Array.from<HTMLElement>(
+      fixture.nativeElement.querySelectorAll('.needs-review'),
+    ).map((field) => field.querySelector('input')?.id);
+
+    expect(flagged).toEqual(['addressCity', 'addressPostalCode', 'phone']);
+  });
+
+  it('says when a value was not found in the document', () => {
+    const note = fixture.nativeElement.querySelector('#addressPostalCode-note') as HTMLElement;
+    expect(note.textContent).toContain('Not found');
+  });
+
+  it('clears the flag once the user edits the field', () => {
+    const input = inputById('phone');
+    input.value = '(555) 010-9999';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#phone-note')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#addressCity-note')).not.toBeNull();
+  });
 });

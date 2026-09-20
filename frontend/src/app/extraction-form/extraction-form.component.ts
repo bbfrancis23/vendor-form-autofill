@@ -11,9 +11,7 @@ import { FIELD_CONFIG } from '../extraction-fields';
 })
 export class ExtractionForm {
   /** The fields returned by the API. A new value rebuilds the form.  */
-
   readonly result = input.required<ExtractionResult>();
-
   readonly fields = FIELD_CONFIG;
 
   /** Derived from the result, so a new result gives a fresh, pre-filled form. */
@@ -27,4 +25,22 @@ export class ExtractionForm {
     }
     return new FormGroup(controls);
   });
+
+  /** Returns true for fields AI was not sure about, until the user edits them. */
+  needsReview(key: FieldKey): boolean {
+    const notSure = this.result()[key].confidence !== 'high';
+    return notSure && !this.form().controls[key].dirty;
+  }
+
+  /** This note is shown under a flagged field. */
+  reviewMessage(key: FieldKey): string {
+    const field = this.result()[key];
+    if (field.value === null) {
+      return 'Not found in the Document - please fill this in';
+    }
+
+    return field.confidence === 'low'
+      ? 'Low confidence - please check this value'
+      : 'Medium confidence - please double-check this value';
+  }
 }
