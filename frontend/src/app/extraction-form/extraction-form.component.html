@@ -1,8 +1,21 @@
 <form [formGroup]="form()">
   @for (field of fields; track field.key) {
-    <div class="field">
+    <div class="field" [class.needs-review]="needsReview(field.key)">
       <label [for]="field.key">{{ field.label }}</label>
-      <input [id]="field.key" [type]="field.inputType" [formControlName]="field.key" />
+      <div class="control">
+        <input
+          [id]="field.key"
+          [type]="field.inputType"
+          [formControlName]="field.key"
+          [attr.aria-describedby]="needsReview(field.key) ? field.key + '-note' : null"
+        />
+        @if (needsReview(field.key)) {
+          <span class="icon" aria-hidden="true">⚠</span>
+        }
+      </div>
+      @if (needsReview(field.key)) {
+        <p class="note" [id]="field.key + '-note'">{{ reviewMessage(field.key) }}</p>
+      }
     </div>
   }
 </form>
