@@ -1,11 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import {
   BadGatewayException,
+  Inject,
   Injectable,
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EXTRACTION_ENABLED_TOKEN } from './extraction.config';
 import { ExtractedFields, ExtractedFieldsSchema } from './extraction.schema';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 
@@ -19,7 +21,10 @@ export class ExtractionService {
   private readonly client: Anthropic;
   private readonly model: string;
 
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    @Inject(EXTRACTION_ENABLED_TOKEN) private readonly enabled: boolean,
+  ) {
     this.client = new Anthropic({
       apiKey: config.getOrThrow<string>('ANTHROPIC_API_KEY'),
       timeout: 60_000, // milliseconds; the SDK default is 10 minutes
@@ -28,6 +33,12 @@ export class ExtractionService {
   }
 
   async extractText(text: string): Promise<ExtractedFields> {
+    if (!this.enabled) {
+      throw new ServiceUnavailableException(
+        'Extraction is turned off right now.',
+      );
+    }
+
     const response = await this.client.messages
       .parse({
         model: this.model,

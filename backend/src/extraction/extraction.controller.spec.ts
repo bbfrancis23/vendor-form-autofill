@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExtractionController } from './extraction.controller';
 import { ExtractionService } from './extraction.service';
 import { ConfigService } from '@nestjs/config';
+import { EXTRACTION_ENABLED_TOKEN } from './extraction.config';
 
 describe('ExtractionController', () => {
   let controller: ExtractionController;
@@ -18,6 +19,7 @@ describe('ExtractionController', () => {
             get: (_key: string, fallback?: string) => fallback,
           },
         },
+        { provide: EXTRACTION_ENABLED_TOKEN, useValue: true },
       ],
     }).compile();
 
