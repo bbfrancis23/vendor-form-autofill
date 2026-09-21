@@ -29,6 +29,17 @@ npm run start:dev   # watch mode, http://localhost:3000
 npm test            # unit tests
 ```
 
+## Turning extraction on and off
+
+The API can call Claude only while `EXTRACTION_ENABLED` is `true` in
+`src/extraction/extraction.config.ts`. It is committed as `false`, so a deployed copy
+never spends tokens by accident. While it is off, `POST /extract` returns
+`503 "Extraction is turned off right now."` and Claude is not called.
+
+To try it locally or demo it, set it to `true`, then rebuild (`docker compose up --build`,
+or restart `npm run start:dev`). Set it back to `false` before committing or deploying
+anything you do not want live.
+
 ## API
 
 ### `POST /extract`
