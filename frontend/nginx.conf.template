@@ -9,7 +9,10 @@ server {
   # API_UPSTREAM is filled in when the container starts (for example http://api:3000).
   location /api/ {
     proxy_pass ${API_UPSTREAM}/;
-    proxy_set_header Host $host;
+    # Send the upstream's own host name. Azure Container Apps routes by Host header, so
+    # forwarding the browser's Host would send the request back to this web app.
+    proxy_set_header Host $proxy_host;
+    proxy_set_header X-Forwarded-Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
