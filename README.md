@@ -18,7 +18,7 @@ Extracted fields: business name, tax ID, street address, city, state, postal cod
 - **Backend:** NestJS (TypeScript)
 - **Extraction:** Claude API, with structured outputs defined by a Zod schema
 - **Containers:** Docker and Docker Compose
-- **Deployment (planned):** Azure Container Registry and Azure Container Apps
+- **Deployment:** Azure Container Registry and Azure Container Apps
 
 ## Repository layout
 
@@ -32,12 +32,12 @@ Extracted fields: business name, tax ID, street address, city, state, postal cod
 
 Work is tracked in GitHub [milestones](../../milestones) and [issues](../../issues).
 
-| Milestone                                      | Status  |
-| ---------------------------------------------- | ------- |
-| Backend: Extraction API                        | Done    |
-| Frontend: Upload & Review Form                 | Done    |
-| Containerization (Dockerfiles, Docker Compose) | Done    |
-| Azure Deployment (ACR, Container Apps)         | Planned |
+| Milestone                                      | Status |
+| ---------------------------------------------- | ------ |
+| Backend: Extraction API                        | Done   |
+| Frontend: Upload & Review Form                 | Done   |
+| Containerization (Dockerfiles, Docker Compose) | Done   |
+| Azure Deployment (ACR, Container Apps)         | Done   |
 
 ## Run the whole stack with Docker Compose
 
@@ -115,6 +115,94 @@ npm start
 The Angular dev server forwards `/api` to the backend on port 3000 (see `frontend/proxy.conf.json`), the same job nginx does in Docker. See [`backend/README.md`](backend/README.md) for the API reference, error responses, and notes on calling it from Windows PowerShell.
 
 Tests: `npm test` in `backend/`, and `npm test -- --no-watch` in `frontend/`.
+
+## Azure deployment
+
+Both apps run as Azure Container Apps, pulling from an Azure Container Registry (ACR).
+Only the web app is public; the API is reachable only from inside the environment.
+
+### Resources created
+
+| Resource                   | Name (example)             | Purpose                                                                                     |
+| -------------------------- | -------------------------- | ------------------------------------------------------------------------------------------- |
+| Resource group             | `rg-vendor-form-autofill`  | Holds everything below; delete it to remove all of it                                       |
+| Container registry (ACR)   | e.g. `vfautofill4821`      | Stores the `vendor-api` and `vendor-web` images                                             |
+| Managed identity           | `id-vendor-form-autofill`  | Lets the Container Apps pull images, with the `AcrPull` role; no registry password anywhere |
+| Container Apps environment | `cae-vendor-form-autofill` | Shared network and logs for both apps                                                       |
+| Container app `vendor-api` | -                          | The API, **internal ingress only**, port 3000                                               |
+| Container app `vendor-web` | -                          | The web app, **external ingress**, port 80, nginx forwards `/api` to `vendor-api`           |
+
+ACR registry names must be globally unique (lowercase letters and digits only), so a
+freshly created registry needs its own name; substitute it in the commands below.
+
+### Deploying (or redeploying)
+
+Both images are versioned (`v1`, `v2`, ...), not `latest`, because Container Apps only
+picks up a new deployment when the image reference changes.
+
+```bash
+# from the repository root, with Docker Desktop running
+docker compose build api web
+az acr login --name <acr-name>
+docker tag vendor-api:latest <acr-name>.azurecr.io/vendor-api:vN
+docker tag vendor-web:latest <acr-name>.azurecr.io/vendor-web:vN
+docker push <acr-name>.azurecr.io/vendor-api:vN
+docker push <acr-name>.azurecr.io/vendor-web:vN
+
+az containerapp update --name vendor-api --resource-group rg-vendor-form-autofill \
+  --image <acr-name>.azurecr.io/vendor-api:vN
+az containerapp update --name vendor-web --resource-group rg-vendor-form-autofill \
+  --image <acr-name>.azurecr.io/vendor-web:vN
+```
+
+### Turning extraction on and off in Azure
+
+The deployed API URL is public, so `EXTRACTION_ENABLED` (see `backend/README.md`) stays
+`false` in every image built from `master`. To demo the live app, build and push a
+second API image with the flag temporarily set to `true` locally (never commit it), and
+switch the running app between the two images:
+
+```bash
+# on: demo image
+az containerapp update --name vendor-api --resource-group rg-vendor-form-autofill \
+  --image <acr-name>.azurecr.io/vendor-api:v2
+
+# off again
+az containerapp update --name vendor-api --resource-group rg-vendor-form-autofill \
+  --image <acr-name>.azurecr.io/vendor-api:v1
+```
+
+Each switch takes about a minute and needs no rebuild once both images exist. Check the
+live app after switching (extract a sample from `backend/samples/`, or confirm the "Extraction
+is turned off right now." message).
+
+### Secrets
+
+`ANTHROPIC_API_KEY` is stored as a Container Apps **secret** and referenced by the API's
+environment variable with `secretref:`, so it is never in an image, a Dockerfile, the
+repository, or the app logs.
+
+### Teardown
+
+Everything above lives in one resource group, so deleting it removes the registry, both
+container apps, the environment, and the Log Analytics workspace Azure creates
+alongside it:
+
+```bash
+az group delete --name rg-vendor-form-autofill --yes --no-wait
+```
+
+`--no-wait` returns immediately; the deletion itself takes a few minutes. Confirm it
+finished with:
+
+```bash
+az group exists --name rg-vendor-form-autofill   # prints "false" once deleted
+```
+
+**Cost note:** while the resource group exists, it costs roughly the price of an ACR
+Basic registry (a few dollars a month) plus a small amount for two low-traffic Container
+Apps; Anthropic usage is separate and capped by the spend limit on the account. Delete
+the resource group when the prototype is no longer needed.
 
 ## Design notes
 
